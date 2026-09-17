@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Rename Tab",
+  "version": "1.0.0",
+  "description": "Rename any browser tab with a keyboard shortcut, and restore its original title just as fast.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["activeTab", "scripting"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_ui": {
+    "page": "about.html",
+    "open_in_tab": true
+  },
+  "action": {
+    "default_title": "Rename Tab",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "commands": {
+    "rename-tab": {
+      "suggested_key": {
+        "default": "Alt+Shift+R",
+        "mac": "Alt+Shift+R"
+      },
+      "description": "Rename the current tab"
+    },
+    "restore-tab": {
+      "suggested_key": {
+        "default": "Alt+Shift+D",
+        "mac": "Alt+Shift+D"
+      },
+      "description": "Restore the tab's original title"
+    }
+  }
+}

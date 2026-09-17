@@ -1,0 +1,5 @@
+.DS_Store
+dist/
+
+# Working notes for the Chrome Web Store submission, kept local.
+STORE_LISTING.md

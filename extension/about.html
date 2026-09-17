@@ -1,0 +1,143 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Rename Tab</title>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --card: #ffffff;
+        --text: #111827;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+        --key-bg: #f3f4f6;
+        --accent: #4f46e5;
+        --accent-text: #ffffff;
+        --ok: #059669;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #171a21;
+          --card: #1f2430;
+          --text: #f3f5f9;
+          --muted: #9aa3b2;
+          --border: #343b4a;
+          --key-bg: #2b3140;
+          --accent: #818cf8;
+          --accent-text: #14161d;
+          --ok: #34d399;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 40px 24px 64px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-size: 15.5px;
+        line-height: 1.6;
+      }
+      .wrap { max-width: 640px; margin: 0 auto; }
+      header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+      header img { width: 40px; height: 40px; border-radius: 9px; }
+      h1 { margin: 0; font-size: 21px; font-weight: 650; letter-spacing: -0.01em; }
+      .version { color: var(--muted); font-size: 13px; }
+      .lede { color: var(--muted); margin: 0 0 24px 52px; font-size: 14.5px; }
+      section {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px 20px;
+        margin-bottom: 16px;
+      }
+      h2 {
+        margin: 0 0 4px;
+        font-size: 13.5px;
+        font-weight: 650;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .shortcut {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 11px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .shortcut:last-of-type { border-bottom: none; }
+      kbd {
+        flex: none;
+        padding: 4px 9px;
+        background: var(--key-bg);
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        font-family: inherit;
+        font-size: 13.5px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      kbd.unset { color: var(--muted); font-weight: 500; }
+      button.primary {
+        margin-top: 14px;
+        padding: 8px 14px;
+        background: var(--accent);
+        color: var(--accent-text);
+        border: none;
+        border-radius: 8px;
+        font: inherit;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      button.primary:hover { filter: brightness(1.07); }
+      .note { color: var(--muted); font-size: 13.5px; margin: 12px 0 0; }
+      ul.facts { margin: 8px 0 0; padding-left: 18px; }
+      ul.facts li { margin-bottom: 5px; }
+      a { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <img src="icons/icon128.png" alt="" />
+        <div>
+          <h1>Rename Tab</h1>
+          <div class="version" id="version"></div>
+        </div>
+      </header>
+      <p class="lede">Nothing leaves your browser.</p>
+
+      <section>
+        <h2>Shortcuts</h2>
+        <div class="shortcut">
+          <span>Rename the current tab</span>
+          <kbd id="rename-key">…</kbd>
+        </div>
+        <div class="shortcut">
+          <span>Restore the original title</span>
+          <kbd id="restore-key">…</kbd>
+        </div>
+        <button class="primary" id="customize">Change shortcuts</button>
+        <p class="note">Chrome manages keyboard shortcuts, so this opens Chrome's editor.</p>
+      </section>
+
+      <section>
+        <h2>Privacy</h2>
+        <ul class="facts">
+          <li>No network requests. No servers, no analytics.</li>
+          <li>No access to page content. It sees the tab title while you rename it.</li>
+          <li>No stored data. Nothing is written to disk.</li>
+          <li>No remote code. Everything runs from files in the package.</li>
+        </ul>
+        <p class="note">
+          <a href="https://github.com/ChetanPatteparapu1/rename-tab" target="_blank" rel="noreferrer">View the source code</a>
+        </p>
+      </section>
+
+    </div>
+    <script src="about.js"></script>
+  </body>
+</html>
