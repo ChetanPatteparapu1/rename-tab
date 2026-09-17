@@ -10,39 +10,39 @@ It runs only when the user presses a keyboard shortcut or clicks its icon.
 
 ## Permissions
 
-| Permission | What it grants | What it does not grant |
+| Permission | What it grants | What the code does with it |
 | --- | --- | --- |
-| `activeTab` | Access to one tab, only after the user presses the shortcut, revoked on navigation | Access to any other tab, or any access while idle |
-| `scripting` | Running the extension's own bundled script in that tab | Running downloaded or remote code |
-| `storage` | Session memory holding the current tab names | Anything on disk |
-| Host access | Optional, off by default, and requested one origin at a time. Granted only when a user presses "Keep names on" a given site, which lets the title be reapplied there after a page loads | It is never requested for all sites, and never used to read page content. The injected code touches `document.title` and nothing else |
+| `<all_urls>` host access | Runs `content.js` on every page at `document_start` | Reads and writes `document.title`. Nothing else. It does not read page content, forms, or history |
+| `scripting` | Running the extension's own bundled script | No remote or downloaded code exists in the package |
+| `storage` | Session memory holding the names of currently renamed tabs | Cleared when Chrome closes. Nothing on disk |
 
-A fresh install requests no host access, so Chrome shows no site access warning.
-`<all_urls>` appears in `optional_host_permissions` because Chrome requires an
-optional permission to be declared before a narrower one can be requested from
-it. The code only ever requests a single origin, which you can confirm by
-grepping for `permissions.request`.
 There is no `tabs`, `webRequest`, `cookies`, `history`, or `nativeMessaging`
 permission.
 
-To stop users granting the optional permission, block it by policy:
+Chrome shows **"Read and change all your data on all websites"** at install. That
+is an accurate statement of capability and it is unavoidable for this feature:
+restoring a tab title after a reload means running on the page that loaded, and
+Chrome provides no narrower mechanism. Every extension in this category carries
+the same permission.
+
+What should lower your risk assessment is not the wording but the code. It is
+small, unminified, has no build step, and can be checked against the published
+build in one command.
+
+To restrict it to an allowlist of sites, use policy:
 
 ```json
 {
   "ExtensionSettings": {
-    "<extension-id>": { "runtime_blocked_hosts": ["*://*/*"] }
+    "<extension-id>": {
+      "runtime_blocked_hosts": ["*://*/*"],
+      "runtime_allowed_hosts": ["*://*.your-company.com"]
+    }
   }
 }
 ```
 
-The extension keeps working with that policy in place. Only the reload feature
-stops.
-
-## Data
-
-Nothing is collected, transmitted, or written to disk. There are no analytics,
-no telemetry, no accounts, and no network requests of any kind. Tab names are
-held in session memory and cleared when Chrome closes.
+The extension keeps working on allowed hosts and does nothing on the rest.
 
 ## Verify it yourself
 
@@ -56,9 +56,11 @@ git clone https://github.com/ChetanPatteparapu1/rename-tab && cd rename-tab
 grep -rE 'fetch\(|XMLHttpRequest|WebSocket|eval\(|new Function|https?://' extension/
 ```
 
-The second command returns nothing. There is no HTTP URL anywhere in the shipped
-code. The extension is about 400 lines of plain JavaScript with no build step, so
-reading all of it takes a few minutes.
+The second command returns exactly one line: the link to this repository on the
+about page. There is no `fetch`, `XMLHttpRequest` or `WebSocket` in the package,
+so the extension has no way to send anything anywhere. It is about 540 lines of
+plain JavaScript with no build step, and `content.js` is the only file that
+touches web pages.
 
 ## Deploying to a fleet
 

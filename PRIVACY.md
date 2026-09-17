@@ -9,25 +9,23 @@ Rename Tab does not collect, store, transmit, or sell any data.
 - No accounts, cookies, or identifiers.
 - Nothing is written to disk. Names stay in memory until Chrome closes.
 
-The title you type stays in the memory of the page you typed it on. Reloading or
-leaving that page discards it.
+The names you set are held in memory and cleared when Chrome closes.
 
-The extension requests two permissions, both used only when you press a shortcut
-or click its toolbar icon:
+The extension requests these permissions:
 
-**activeTab** gives temporary access to the tab you are viewing, so its title can
-be changed. Chrome grants this only in response to your action and revokes it
-when you navigate away.
+**Access to the websites you visit.** Chrome words this as "read and change all
+your data on all websites". It is needed because restoring a name after a reload
+means running on the page that just loaded, and Chrome offers no narrower way to
+do that. The code uses it to set the tab title and for nothing else. It does not
+read page content, form fields, or your browsing history, and it makes no network
+requests.
 
-**scripting** is required to run the rename code inside that tab.
+**scripting** is required to run that code.
 
-One further permission is optional and off unless you turn it on:
+**storage** holds the names of currently renamed tabs in memory. They are cleared
+when Chrome closes.
 
-**Access to a single site** is requested only when you press "Keep names on"
-that site. Chrome revokes normal access the moment a page reloads, so this is the
-only way to put your name back afterwards. The prompt names that one site, and
-permission is never requested for all sites. It is used for nothing else: the
-code reads and writes the tab title and never touches page content. Revoke it
-from the popup or the about page, which also clears the names kept for it.
+The source is public, so the paragraph above is checkable rather than a promise:
+https://github.com/ChetanPatteparapu1/rename-tab
 
 Contact: chetan.patteparapu@gmail.com

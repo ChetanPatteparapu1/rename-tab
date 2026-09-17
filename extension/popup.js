@@ -48,41 +48,6 @@ async function paintShortcuts() {
   }
 }
 
-// Keeping a name across a reload needs permission for that one site. Chrome
-// only shows the prompt during a user gesture, so the click handler cannot wait
-// on an await before asking.
-async function paintPersist() {
-  const row = document.getElementById('persist');
-  const label = document.getElementById('persist-label');
-  const button = document.getElementById('persist-button');
-
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  let origin = null;
-  try {
-    const url = new URL(tab.url);
-    if (url.protocol === 'http:' || url.protocol === 'https:') origin = url;
-  } catch (_) {
-    /* restricted page, or no access to this tab */
-  }
-  if (!origin) return;
-
-  const pattern = { origins: [origin.origin + '/*'] };
-  const granted = await chrome.permissions.contains(pattern);
-
-  label.textContent = granted
-    ? 'Names stay here after a reload.'
-    : 'Names reset when this page reloads.';
-  button.textContent = granted ? 'Turn off for ' + origin.host : 'Keep names on ' + origin.host;
-  button.className = granted ? 'wide off' : 'wide';
-  button.onclick = () => {
-    const change = granted
-      ? chrome.permissions.remove(pattern)
-      : chrome.permissions.request(pattern);
-    change.then(() => window.close()).catch(() => {});
-  };
-  row.hidden = false;
-}
-
 function send(type) {
   chrome.runtime.sendMessage({ type }).finally(() => window.close());
 }
@@ -100,4 +65,3 @@ document.getElementById('settings').addEventListener('click', () => {
 });
 
 paintShortcuts();
-paintPersist();
