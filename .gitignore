@@ -3,3 +3,6 @@ dist/
 
 # Working notes for the Chrome Web Store submission, kept local.
 STORE_LISTING.md
+
+# Store screenshots, regenerate with tools/make_screenshot.py
+store-assets/
