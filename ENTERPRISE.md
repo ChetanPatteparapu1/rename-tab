@@ -15,9 +15,13 @@ It runs only when the user presses a keyboard shortcut or clicks its icon.
 | `activeTab` | Access to one tab, only after the user presses the shortcut, revoked on navigation | Access to any other tab, or any access while idle |
 | `scripting` | Running the extension's own bundled script in that tab | Running downloaded or remote code |
 | `storage` | Session memory holding the current tab names | Anything on disk |
-| `<all_urls>` | Optional and off by default. Granted only if a user turns on "Keep names after reload", which lets the title be reapplied after a page loads | It is never used to read page content. The injected code touches `document.title` and nothing else |
+| Host access | Optional, off by default, and requested one origin at a time. Granted only when a user presses "Keep names on" a given site, which lets the title be reapplied there after a page loads | It is never requested for all sites, and never used to read page content. The injected code touches `document.title` and nothing else |
 
 A fresh install requests no host access, so Chrome shows no site access warning.
+`<all_urls>` appears in `optional_host_permissions` because Chrome requires an
+optional permission to be declared before a narrower one can be requested from
+it. The code only ever requests a single origin, which you can confirm by
+grepping for `permissions.request`.
 There is no `tabs`, `webRequest`, `cookies`, `history`, or `nativeMessaging`
 permission.
 

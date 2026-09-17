@@ -74,6 +74,32 @@
         white-space: nowrap;
       }
       kbd.unset { color: var(--muted); font-weight: 500; }
+      .persist {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border);
+      }
+      .persist .note { display: block; margin-bottom: 8px; }
+      button.wide {
+        width: 100%;
+        padding: 8px 10px;
+        background: var(--accent);
+        color: var(--accent-text);
+        border: none;
+        border-radius: 8px;
+        font: inherit;
+        font-weight: 600;
+        font-size: 12.5px;
+        cursor: pointer;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      button.wide.off {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
       .foot {
         margin-top: 10px;
         padding-top: 10px;
@@ -110,6 +136,11 @@
       <span>Restore original title</span>
       <kbd id="restore-key">…</kbd>
     </button>
+
+    <div class="persist" id="persist" hidden>
+      <span class="note" id="persist-label"></span>
+      <button class="wide" id="persist-button"></button>
+    </div>
 
     <div class="foot">
       <span class="note" id="note">The title resets when the page reloads.</span>

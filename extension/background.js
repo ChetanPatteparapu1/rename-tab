@@ -5,12 +5,10 @@
  * Nothing is sent anywhere. Tab names live in session memory and are cleared
  * when Chrome closes.
  *
- * Surviving a page reload needs permission to read the sites you visit, because
- * Chrome revokes activeTab on navigation. That permission is optional and off
- * until the user turns it on from the about page.
+ * Surviving a page reload needs permission for the site in question, because
+ * Chrome revokes activeTab on navigation. That permission is optional, granted
+ * one site at a time, and asked for from the popup.
  */
-
-const PERSIST_PERMISSION = { origins: ['<all_urls>'] };
 
 const BLOCKED_SCHEMES = [
   'chrome://',
@@ -31,9 +29,21 @@ function isRestrictedUrl(url) {
   return BLOCKED_HOSTS.some((host) => url.includes(host));
 }
 
-async function canPersist() {
+function originPattern(url) {
   try {
-    return await chrome.permissions.contains(PERSIST_PERMISSION);
+    return new URL(url).origin + '/*';
+  } catch (_) {
+    return null;
+  }
+}
+
+// Permission is held per site, so a name is only remembered where the user has
+// allowed this extension to act.
+async function canPersistOn(url) {
+  const pattern = originPattern(url);
+  if (!pattern) return false;
+  try {
+    return await chrome.permissions.contains({ origins: [pattern] });
   } catch (_) {
     return false;
   }
@@ -109,7 +119,7 @@ async function applyRename(tabId, title, url) {
     func: applyTitleInPage,
     args: [title]
   });
-  if (await canPersist()) await remember(tabId, title, url);
+  if (await canPersistOn(url)) await remember(tabId, title, url);
 }
 
 chrome.commands.onCommand.addListener((command) => {
@@ -130,15 +140,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Put the name back after a reload, when the user has allowed it.
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status !== 'loading' && changeInfo.status !== 'complete') return;
-  if (!(await canPersist())) return;
 
   const stored = await recall(tabId);
   if (!stored) return;
 
-  // A name belongs to the site it was given on, not to the tab forever.
+  // Without permission for this site, tab.url is hidden and there is nothing to
+  // do anyway. A name belongs to the site it was given on, not to the tab.
+  if (!tab.url) return;
   let origin;
   try {
-    origin = new URL(tab.url || '').origin;
+    origin = new URL(tab.url).origin;
   } catch (_) {
     return;
   }
@@ -146,6 +157,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     await forget(tabId);
     return;
   }
+  if (!(await canPersistOn(tab.url))) return;
 
   try {
     await chrome.scripting.executeScript({
@@ -161,8 +173,18 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
 chrome.tabs.onRemoved.addListener((tabId) => forget(tabId).catch(() => {}));
 
-chrome.permissions.onRemoved.addListener(() => {
-  chrome.storage.session.clear().catch(() => {});
+// Revoking a site's permission should drop the names kept for it.
+chrome.permissions.onRemoved.addListener(async () => {
+  const stored = await chrome.storage.session.get(null);
+  const stale = [];
+  for (const [key, value] of Object.entries(stored)) {
+    if (!value || !value.origin) continue;
+    const allowed = await chrome.permissions
+      .contains({ origins: [value.origin + '/*'] })
+      .catch(() => false);
+    if (!allowed) stale.push(key);
+  }
+  if (stale.length) await chrome.storage.session.remove(stale);
 });
 
 chrome.runtime.onInstalled.addListener((details) => {

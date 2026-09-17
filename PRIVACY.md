@@ -23,10 +23,11 @@ when you navigate away.
 
 One further permission is optional and off unless you turn it on:
 
-**Access to the sites you visit** is requested only if you enable "Keep names
-after reload". Chrome revokes normal access the moment a page reloads, so this is
-the only way to put your name back afterwards. It is used for nothing else: the
-code reads and writes the tab title and never touches page content. You can turn
-it off at any time from the same button, which also clears every stored name.
+**Access to a single site** is requested only when you press "Keep names on"
+that site. Chrome revokes normal access the moment a page reloads, so this is the
+only way to put your name back afterwards. The prompt names that one site, and
+permission is never requested for all sites. It is used for nothing else: the
+code reads and writes the tab title and never touches page content. Revoke it
+from the popup or the about page, which also clears the names kept for it.
 
 Contact: chetan.patteparapu@gmail.com

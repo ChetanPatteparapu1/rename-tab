@@ -99,33 +99,47 @@ document.addEventListener('visibilitychange', () => {
 
 paintShortcuts();
 
-/* Optional permission: putting a name back after a reload requires access to
-   the sites the user visits, so it stays off until they ask for it. */
+/* Keeping a name across a reload needs permission for that one site, granted
+   from the popup while the user is on it. This page lists what was granted. */
 
-const PERSIST_PERMISSION = { origins: ['<all_urls>'] };
-const persistCopy = document.getElementById('persist-copy');
-const persistToggle = document.getElementById('persist-toggle');
-let persistOn = false;
+const sitesList = document.getElementById('persist-sites');
+const clearButton = document.getElementById('persist-clear');
 
-async function paintPersist() {
-  persistOn = await chrome.permissions.contains(PERSIST_PERMISSION);
-  persistCopy.textContent = persistOn
-    ? 'Names survive a reload. They are cleared when you close the tab, visit a different site, or quit Chrome.'
-    : 'A renamed tab goes back to its original title when the page reloads. Keeping your name needs Chrome\'s permission to read the sites you visit.';
-  persistToggle.textContent = persistOn ? 'Turn off' : 'Turn on';
-  persistToggle.className = persistOn ? 'secondary' : 'primary';
+function hostOf(pattern) {
+  try {
+    return new URL(pattern.replace(/\*$/, '')).host;
+  } catch (_) {
+    return pattern;
+  }
 }
 
-// Chrome only shows the permission prompt during a user gesture, so this cannot
-// wait on an await before asking.
-persistToggle.addEventListener('click', () => {
-  const change = persistOn
-    ? chrome.permissions.remove(PERSIST_PERMISSION)
-    : chrome.permissions.request(PERSIST_PERMISSION);
-  change.then(paintPersist).catch(() => {});
-});
+async function paintSites() {
+  const granted = await chrome.permissions.getAll();
+  const origins = (granted.origins || []).filter((o) => o !== '<all_urls>');
 
-chrome.permissions.onAdded.addListener(paintPersist);
-chrome.permissions.onRemoved.addListener(paintPersist);
+  sitesList.replaceChildren();
 
-paintPersist();
+  if (!origins.length) {
+    const empty = document.createElement('li');
+    empty.className = 'empty';
+    empty.textContent = 'No sites yet.';
+    sitesList.appendChild(empty);
+    clearButton.hidden = true;
+    return;
+  }
+
+  for (const origin of origins) {
+    const item = document.createElement('li');
+    item.textContent = hostOf(origin);
+    sitesList.appendChild(item);
+  }
+  clearButton.hidden = false;
+  clearButton.onclick = () => {
+    chrome.permissions.remove({ origins }).then(paintSites).catch(() => {});
+  };
+}
+
+chrome.permissions.onAdded.addListener(paintSites);
+chrome.permissions.onRemoved.addListener(paintSites);
+
+paintSites();

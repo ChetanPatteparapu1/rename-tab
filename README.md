@@ -33,14 +33,18 @@ published on the Chrome Web Store and compares it against this source:
 ## Keeping names after a reload
 
 Chrome revokes `activeTab` as soon as a page navigates, so by default a renamed
-tab returns to its own title on reload. Restoring it afterwards requires
-permission to read the sites you visit, which no small utility should demand up
-front. So it is an optional permission, off until the user presses a button on
-the about page, and revocable from the same button.
+tab returns to its own title on reload. Restoring it afterwards needs host
+permission, and the trick is to ask for one site rather than all of them.
 
-With it on, the worker keeps each name in `chrome.storage.session` and reapplies
-it as the page loads. Names are dropped when the tab closes, when it moves to a
-different site, and when Chrome quits.
+The popup offers "Keep names on example.com" while you are on that site. Chrome
+prompts for that origin alone, so the wording names the single site instead of
+every website you visit. Grant it once per site you care about, which for most
+people is three or four. The about page lists what has been granted and revokes
+it.
+
+With permission in hand, the worker keeps each name in `chrome.storage.session`
+and reapplies it as the page loads. Names are dropped when the tab closes, when
+it moves to a different site, and when Chrome quits.
 
 ## How it works
 
@@ -55,8 +59,8 @@ rather than a stylesheet, so strict sites cannot block or restyle it.
 
 These come from Chrome and apply to every extension:
 
-- Names disappear on reload until you turn on "Keep names after reload" on the
-  about page. See below.
+- Names disappear on reload until you allow the extension on that site. See
+  below.
 - Chrome pages, the new tab page and the Web Store cannot be renamed. The
   toolbar icon flashes red on those.
 - Local files need "Allow access to file URLs" turned on.

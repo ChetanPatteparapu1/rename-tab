@@ -107,6 +107,14 @@
       }
       button.primary:hover { filter: brightness(1.07); }
       .spaced { margin-top: 14px; }
+      ul.sites { list-style: none; margin: 0 0 14px; padding: 0; }
+      ul.sites li {
+        padding: 9px 0;
+        border-bottom: 1px solid var(--border);
+        font-variant-numeric: tabular-nums;
+      }
+      ul.sites li:last-child { border-bottom: none; }
+      ul.sites li.empty { color: var(--muted); border-bottom: none; }
       .copy { color: var(--muted); font-size: 14.5px; margin: 0 0 14px; }
       button.secondary {
         margin-top: 0;
@@ -160,8 +168,13 @@
 
       <section>
         <h2>Keep names after reload</h2>
-        <p class="copy" id="persist-copy"></p>
-        <button class="primary" id="persist-toggle"></button>
+        <p class="copy">
+          A renamed tab returns to its own title when the page reloads. To keep
+          it, open the extension on that site and press Keep names. Chrome asks
+          once per site, and only for that site.
+        </p>
+        <ul class="sites" id="persist-sites"></ul>
+        <button class="secondary" id="persist-clear" hidden>Remove all</button>
       </section>
 
       <section>
