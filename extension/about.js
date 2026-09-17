@@ -1,19 +1,65 @@
-const MAC_SYMBOLS = {
-  Command: '⌘',
-  Ctrl: '⌃',
-  MacCtrl: '⌃',
-  Alt: '⌥',
-  Option: '⌥',
-  Shift: '⇧'
+const MAC = {
+  Command: ['⌘', 'Command'],
+  Ctrl: ['⌃', 'Control'],
+  MacCtrl: ['⌃', 'Control'],
+  Alt: ['⌥', 'Option'],
+  Shift: ['⇧', 'Shift']
 };
 
-function formatShortcut(shortcut, isMac) {
-  if (!shortcut) return null;
-  if (!isMac) return shortcut;
-  return shortcut
-    .split('+')
-    .map((part) => MAC_SYMBOLS[part] || part)
-    .join('');
+const OTHER = {
+  Ctrl: ['Ctrl', 'Ctrl'],
+  MacCtrl: ['Ctrl', 'Ctrl'],
+  Alt: ['Alt', 'Alt'],
+  Shift: ['Shift', 'Shift']
+};
+
+const FROM_SYMBOL = { '⌘': 'Command', '⌃': 'Ctrl', '⌥': 'Alt', '⇧': 'Shift' };
+
+// Chrome reports shortcuts as "Alt+R" on Windows and "⌥R" on macOS.
+function splitShortcut(shortcut) {
+  if (shortcut.includes('+')) return shortcut.split('+');
+  const parts = [];
+  let rest = shortcut;
+  while (rest.length && FROM_SYMBOL[rest[0]]) {
+    parts.push(FROM_SYMBOL[rest[0]]);
+    rest = rest.slice(1);
+  }
+  if (rest) parts.push(rest);
+  return parts;
+}
+
+function paintRow(keysEl, spelledEl, shortcut, isMac) {
+  keysEl.replaceChildren();
+  spelledEl.textContent = '';
+
+  if (!shortcut) {
+    const cap = document.createElement('kbd');
+    cap.className = 'unset';
+    cap.textContent = 'Not set';
+    keysEl.appendChild(cap);
+    spelledEl.textContent = 'Set one in Chrome';
+    return;
+  }
+
+  const table = isMac ? MAC : OTHER;
+  const words = [];
+
+  splitShortcut(shortcut).forEach((part, index) => {
+    const [glyph, word] = table[part] || [part, part];
+    if (index > 0) {
+      const plus = document.createElement('span');
+      plus.className = 'plus';
+      plus.textContent = '+';
+      keysEl.appendChild(plus);
+    }
+    const cap = document.createElement('kbd');
+    cap.textContent = glyph;
+    keysEl.appendChild(cap);
+    words.push(word);
+  });
+
+  // On Windows the caps already spell it out, so only Macs need the translation.
+  spelledEl.textContent = isMac ? words.join(' + ') : '';
 }
 
 async function paintShortcuts() {
@@ -22,17 +68,21 @@ async function paintShortcuts() {
     chrome.commands.getAll()
   ]);
   const isMac = os === 'mac';
-  const targets = {
-    'rename-tab': document.getElementById('rename-key'),
-    'restore-tab': document.getElementById('restore-key')
+
+  const rows = {
+    'rename-tab': ['rename-keys', 'rename-spelled'],
+    'restore-tab': ['restore-keys', 'restore-spelled']
   };
 
   for (const command of commands) {
-    const element = targets[command.name];
-    if (!element) continue;
-    const label = formatShortcut(command.shortcut, isMac);
-    element.textContent = label || 'Not set';
-    element.classList.toggle('unset', !label);
+    const row = rows[command.name];
+    if (!row) continue;
+    paintRow(
+      document.getElementById(row[0]),
+      document.getElementById(row[1]),
+      command.shortcut,
+      isMac
+    );
   }
 }
 

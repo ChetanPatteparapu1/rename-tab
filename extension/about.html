@@ -60,26 +60,39 @@
         color: var(--muted);
       }
       .shortcut {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 11px 0;
+        padding: 15px 0;
         border-bottom: 1px solid var(--border);
       }
       .shortcut:last-of-type { border-bottom: none; }
+      .action { font-weight: 550; margin-bottom: 9px; }
+      .keyrow { display: flex; align-items: center; gap: 13px; flex-wrap: wrap; }
+      .keys { display: flex; align-items: center; gap: 7px; }
       kbd {
-        flex: none;
-        padding: 4px 9px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        height: 44px;
+        padding: 0 13px;
         background: var(--key-bg);
+        color: var(--accent);
         border: 1px solid var(--border);
-        border-radius: 7px;
+        border-bottom-width: 3px;
+        border-radius: 10px;
         font-family: inherit;
-        font-size: 13.5px;
+        font-size: 20px;
         font-weight: 600;
+        line-height: 1;
         white-space: nowrap;
       }
-      kbd.unset { color: var(--muted); font-weight: 500; }
+      kbd.unset {
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 500;
+        border-bottom-width: 1px;
+      }
+      .plus { color: var(--muted); font-size: 15px; }
+      .spelled { color: var(--muted); font-size: 14.5px; }
       button.primary {
         margin-top: 14px;
         padding: 8px 14px;
@@ -113,12 +126,18 @@
       <section>
         <h2>Shortcuts</h2>
         <div class="shortcut">
-          <span>Rename the current tab</span>
-          <kbd id="rename-key">…</kbd>
+          <div class="action">Rename the current tab</div>
+          <div class="keyrow">
+            <span class="keys" id="rename-keys"></span>
+            <span class="spelled" id="rename-spelled"></span>
+          </div>
         </div>
         <div class="shortcut">
-          <span>Restore the original title</span>
-          <kbd id="restore-key">…</kbd>
+          <div class="action">Restore the original title</div>
+          <div class="keyrow">
+            <span class="keys" id="restore-keys"></span>
+            <span class="spelled" id="restore-spelled"></span>
+          </div>
         </div>
         <button class="primary" id="customize">Change shortcuts</button>
         <p class="note">Chrome manages keyboard shortcuts, so this opens Chrome's editor.</p>
