@@ -14,16 +14,31 @@ It runs only when the user presses a keyboard shortcut or clicks its icon.
 | --- | --- | --- |
 | `activeTab` | Access to one tab, only after the user presses the shortcut, revoked on navigation | Access to any other tab, or any access while idle |
 | `scripting` | Running the extension's own bundled script in that tab | Running downloaded or remote code |
+| `storage` | Session memory holding the current tab names | Anything on disk |
+| `<all_urls>` | Optional and off by default. Granted only if a user turns on "Keep names after reload", which lets the title be reapplied after a page loads | It is never used to read page content. The injected code touches `document.title` and nothing else |
 
-There are no host permissions. No `<all_urls>`, `tabs`, `webRequest`, `cookies`,
-`history`, or `nativeMessaging`. Chrome shows no host access warning at install
-because there is no host access.
+A fresh install requests no host access, so Chrome shows no site access warning.
+There is no `tabs`, `webRequest`, `cookies`, `history`, or `nativeMessaging`
+permission.
+
+To stop users granting the optional permission, block it by policy:
+
+```json
+{
+  "ExtensionSettings": {
+    "<extension-id>": { "runtime_blocked_hosts": ["*://*/*"] }
+  }
+}
+```
+
+The extension keeps working with that policy in place. Only the reload feature
+stops.
 
 ## Data
 
 Nothing is collected, transmitted, or written to disk. There are no analytics,
-no telemetry, no accounts, and no network requests of any kind. The title a user
-types lives in that page's memory until the page reloads.
+no telemetry, no accounts, and no network requests of any kind. Tab names are
+held in session memory and cleared when Chrome closes.
 
 ## Verify it yourself
 

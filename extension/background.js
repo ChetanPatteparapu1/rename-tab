@@ -1,9 +1,16 @@
 /**
  * Rename Tab - background service worker (MV3)
  *
- * Listens for the two keyboard commands and injects a small, self-contained
- * script into the active tab. Nothing is stored, sent, or tracked.
+ * Keyboard commands inject a short, self-contained script into the active tab.
+ * Nothing is sent anywhere. Tab names live in session memory and are cleared
+ * when Chrome closes.
+ *
+ * Surviving a page reload needs permission to read the sites you visit, because
+ * Chrome revokes activeTab on navigation. That permission is optional and off
+ * until the user turns it on from the about page.
  */
+
+const PERSIST_PERMISSION = { origins: ['<all_urls>'] };
 
 const BLOCKED_SCHEMES = [
   'chrome://',
@@ -22,6 +29,36 @@ function isRestrictedUrl(url) {
   if (!url) return false; // unknown - let the injection attempt decide
   if (BLOCKED_SCHEMES.some((scheme) => url.startsWith(scheme))) return true;
   return BLOCKED_HOSTS.some((host) => url.includes(host));
+}
+
+async function canPersist() {
+  try {
+    return await chrome.permissions.contains(PERSIST_PERMISSION);
+  } catch (_) {
+    return false;
+  }
+}
+
+const keyFor = (tabId) => 'tab:' + tabId;
+
+async function remember(tabId, title, url) {
+  let origin;
+  try {
+    origin = new URL(url).origin;
+  } catch (_) {
+    return;
+  }
+  await chrome.storage.session.set({ [keyFor(tabId)]: { title, origin } });
+}
+
+async function forget(tabId) {
+  await chrome.storage.session.remove(keyFor(tabId));
+}
+
+async function recall(tabId) {
+  const key = keyFor(tabId);
+  const stored = await chrome.storage.session.get(key);
+  return stored[key];
 }
 
 async function getActiveTab() {
@@ -56,6 +93,7 @@ async function run(action) {
 
     if (action === 'restore') {
       const didRestore = injection && injection.result;
+      if (didRestore) await forget(tab.id);
       await flashBadge(tab.id, didRestore ? '↺' : '–', didRestore ? '#059669' : '#6B7280');
     }
   } catch (_) {
@@ -65,16 +103,66 @@ async function run(action) {
   }
 }
 
+async function applyRename(tabId, title, url) {
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    func: applyTitleInPage,
+    args: [title]
+  });
+  if (await canPersist()) await remember(tabId, title, url);
+}
+
 chrome.commands.onCommand.addListener((command) => {
   if (command === 'rename-tab') run('rename');
   else if (command === 'restore-tab') run('restore');
 });
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message && message.type === 'rename') run('rename');
   else if (message && message.type === 'restore') run('restore');
+  else if (message && message.type === 'renamed' && sender.tab) {
+    applyRename(sender.tab.id, message.title, message.url).catch(() => {});
+  }
   sendResponse({ ok: true });
   return false;
+});
+
+// Put the name back after a reload, when the user has allowed it.
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (changeInfo.status !== 'loading' && changeInfo.status !== 'complete') return;
+  if (!(await canPersist())) return;
+
+  const stored = await recall(tabId);
+  if (!stored) return;
+
+  // A name belongs to the site it was given on, not to the tab forever.
+  let origin;
+  try {
+    origin = new URL(tab.url || '').origin;
+  } catch (_) {
+    return;
+  }
+  if (origin !== stored.origin) {
+    await forget(tabId);
+    return;
+  }
+
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: applyTitleInPage,
+      args: [stored.title],
+      injectImmediately: true
+    });
+  } catch (_) {
+    /* the page may not be ready yet; the 'complete' pass will catch it */
+  }
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => forget(tabId).catch(() => {}));
+
+chrome.permissions.onRemoved.addListener(() => {
+  chrome.storage.session.clear().catch(() => {});
 });
 
 chrome.runtime.onInstalled.addListener((details) => {
@@ -82,10 +170,58 @@ chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') chrome.runtime.openOptionsPage();
 });
 
-/* ------------------------------------------------------------------ *
- * The two functions below are stringified and injected into the page. *
- * They must be fully self-contained - no outer references.            *
- * ------------------------------------------------------------------ */
+/* -------------------------------------------------------------------- *
+ * The functions below are stringified and injected into the page.       *
+ * They must be fully self-contained, with no references to outer scope. *
+ * -------------------------------------------------------------------- */
+
+function applyTitleInPage(title) {
+  const state = (window.__renameTabState = window.__renameTabState || {
+    originalTitle: null,
+    desiredTitle: null,
+    observer: null,
+    applying: false
+  });
+
+  const setTitle = (value) => {
+    state.applying = true;
+    try {
+      document.title = value;
+    } catch (_) {
+      /* non-HTML documents cannot be retitled */
+    }
+    state.applying = false;
+  };
+
+  if (state.originalTitle === null) state.originalTitle = document.title;
+  state.desiredTitle = title;
+  setTitle(title);
+
+  if (state.observer || typeof MutationObserver !== 'function') return true;
+
+  const target = document.head || document.documentElement;
+  if (!target) return true;
+
+  state.observer = new MutationObserver(() => {
+    const cur = window.__renameTabState;
+    if (!cur || cur.applying || cur.desiredTitle === null) return;
+    // Anything the page writes is its own title, so remember it as the one to
+    // restore, then put the user's name back. Sites do this for unread counts
+    // and while navigating within an app.
+    if (document.title !== cur.desiredTitle) {
+      cur.originalTitle = document.title;
+      cur.applying = true;
+      try {
+        document.title = cur.desiredTitle;
+      } catch (_) {
+        /* ignore */
+      }
+      cur.applying = false;
+    }
+  });
+  state.observer.observe(target, { childList: true, subtree: true, characterData: true });
+  return true;
+}
 
 function openRenameDialogInPage() {
   const HOST_ID = '__rename_tab_dialog_host__';
@@ -95,13 +231,7 @@ function openRenameDialogInPage() {
     return true;
   }
 
-  const state = (window.__renameTabState = window.__renameTabState || {
-    originalTitle: null,
-    desiredTitle: null,
-    observer: null,
-    applying: false
-  });
-
+  const state = window.__renameTabState;
   const dark =
     window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
@@ -181,7 +311,7 @@ function openRenameDialogInPage() {
   input.type = 'text';
   input.spellcheck = false;
   input.setAttribute('autocomplete', 'off');
-  input.value = state.desiredTitle !== null ? state.desiredTitle : document.title;
+  input.value = state && state.desiredTitle !== null ? state.desiredTitle : document.title;
   input.placeholder = 'Tab title';
 
   const hint = make(
@@ -208,36 +338,7 @@ function openRenameDialogInPage() {
   };
   host.__renameTabFocus = focusInput;
 
-  const close = () => {
-    input.style.borderColor = palette.fieldBorder;
-    host.remove();
-  };
-
-  const setTitleSafely = (value) => {
-    const s = window.__renameTabState;
-    s.applying = true;
-    try {
-      document.title = value;
-    } catch (_) {
-      /* non-HTML documents cannot be retitled */
-    }
-    s.applying = false;
-  };
-
-  const startEnforcing = () => {
-    const s = window.__renameTabState;
-    if (s.observer) return;
-    const target = document.head || document.documentElement;
-    if (!target || typeof MutationObserver !== 'function') return;
-    s.observer = new MutationObserver(() => {
-      const cur = window.__renameTabState;
-      if (!cur || cur.applying || cur.desiredTitle === null) return;
-      // Many sites rewrite document.title on their own (unread counts,
-      // single-page-app route changes). Put our title back when they do.
-      if (document.title !== cur.desiredTitle) setTitleSafely(cur.desiredTitle);
-    });
-    s.observer.observe(target, { childList: true, subtree: true, characterData: true });
-  };
+  const close = () => host.remove();
 
   const commit = () => {
     const value = input.value.trim();
@@ -246,11 +347,12 @@ function openRenameDialogInPage() {
       focusInput();
       return;
     }
-    const s = window.__renameTabState;
-    if (s.originalTitle === null) s.originalTitle = document.title;
-    s.desiredTitle = value;
-    setTitleSafely(value);
-    startEnforcing();
+    // The worker applies the title, so one piece of code owns that job.
+    try {
+      chrome.runtime.sendMessage({ type: 'renamed', title: value, url: location.href });
+    } catch (_) {
+      /* worker asleep; the shortcut can be pressed again */
+    }
     close();
   };
 
@@ -263,7 +365,7 @@ function openRenameDialogInPage() {
     input.style.boxShadow = 'none';
   });
 
-  // Capture phase + stopPropagation so the page's own hotkeys never see these.
+  // Capture phase plus stopPropagation, so the page's own hotkeys never see these.
   input.addEventListener(
     'keydown',
     (event) => {

@@ -98,3 +98,34 @@ document.addEventListener('visibilitychange', () => {
 });
 
 paintShortcuts();
+
+/* Optional permission: putting a name back after a reload requires access to
+   the sites the user visits, so it stays off until they ask for it. */
+
+const PERSIST_PERMISSION = { origins: ['<all_urls>'] };
+const persistCopy = document.getElementById('persist-copy');
+const persistToggle = document.getElementById('persist-toggle');
+let persistOn = false;
+
+async function paintPersist() {
+  persistOn = await chrome.permissions.contains(PERSIST_PERMISSION);
+  persistCopy.textContent = persistOn
+    ? 'Names survive a reload. They are cleared when you close the tab, visit a different site, or quit Chrome.'
+    : 'A renamed tab goes back to its original title when the page reloads. Keeping your name needs Chrome\'s permission to read the sites you visit.';
+  persistToggle.textContent = persistOn ? 'Turn off' : 'Turn on';
+  persistToggle.className = persistOn ? 'secondary' : 'primary';
+}
+
+// Chrome only shows the permission prompt during a user gesture, so this cannot
+// wait on an await before asking.
+persistToggle.addEventListener('click', () => {
+  const change = persistOn
+    ? chrome.permissions.remove(PERSIST_PERMISSION)
+    : chrome.permissions.request(PERSIST_PERMISSION);
+  change.then(paintPersist).catch(() => {});
+});
+
+chrome.permissions.onAdded.addListener(paintPersist);
+chrome.permissions.onRemoved.addListener(paintPersist);
+
+paintPersist();

@@ -19,9 +19,9 @@ Press the shortcut, type a name, press Enter. Both keys can be remapped at
 ## Privacy
 
 No data is collected, stored, or transmitted. The extension makes no network
-requests and holds no host permissions, so it cannot read the pages you visit.
-See [PRIVACY.md](PRIVACY.md), or [ENTERPRISE.md](ENTERPRISE.md) if you are
-reviewing it for a company.
+requests, and a fresh install holds no host permissions, so Chrome shows no site
+access warning. See [PRIVACY.md](PRIVACY.md), or [ENTERPRISE.md](ENTERPRISE.md)
+if you are reviewing it for a company.
 
 You do not have to take that on trust. This command downloads the package
 published on the Chrome Web Store and compares it against this source:
@@ -29,6 +29,18 @@ published on the Chrome Web Store and compares it against this source:
 ```bash
 ./tools/verify_release.sh <extension-id>
 ```
+
+## Keeping names after a reload
+
+Chrome revokes `activeTab` as soon as a page navigates, so by default a renamed
+tab returns to its own title on reload. Restoring it afterwards requires
+permission to read the sites you visit, which no small utility should demand up
+front. So it is an optional permission, off until the user presses a button on
+the about page, and revocable from the same button.
+
+With it on, the worker keeps each name in `chrome.storage.session` and reapplies
+it as the page loads. Names are dropped when the tab closes, when it moves to a
+different site, and when Chrome quits.
 
 ## How it works
 
@@ -43,8 +55,8 @@ rather than a stylesheet, so strict sites cannot block or restyle it.
 
 These come from Chrome and apply to every extension:
 
-- The original title returns on reload. Keeping a name across reloads would
-  require permission to read every site you visit, which is not worth it.
+- Names disappear on reload until you turn on "Keep names after reload" on the
+  about page. See below.
 - Chrome pages, the new tab page and the Web Store cannot be renamed. The
   toolbar icon flashes red on those.
 - Local files need "Allow access to file URLs" turned on.
