@@ -4,8 +4,8 @@ A Chrome extension that renames the current tab from the keyboard.
 
 | Shortcut | Action |
 | --- | --- |
-| `⌥⇧R` (`Alt+Shift+R`) | Rename the current tab |
-| `⌥⇧D` (`Alt+Shift+D`) | Restore the original title |
+| `⌥R` on Mac, `Alt+R` on Windows | Rename the current tab |
+| `⌥U` on Mac, `Alt+U` on Windows | Restore the original title |
 
 Press the shortcut, type a name, press Enter. Both keys can be remapped at
 `chrome://extensions/shortcuts`.

@@ -30,15 +30,15 @@
   "commands": {
     "rename-tab": {
       "suggested_key": {
-        "default": "Alt+Shift+R",
-        "mac": "Alt+Shift+R"
+        "default": "Alt+R",
+        "mac": "Alt+R"
       },
       "description": "Rename the current tab"
     },
     "restore-tab": {
       "suggested_key": {
-        "default": "Alt+Shift+D",
-        "mac": "Alt+Shift+D"
+        "default": "Alt+U",
+        "mac": "Alt+U"
       },
       "description": "Restore the tab's original title"
     }
